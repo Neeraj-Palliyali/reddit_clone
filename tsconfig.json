@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    
+    "target": "es2016",                      
+    "allowJs": true,
+    "strictPropertyInitialization": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noEmit": true,
+    "isolatedModules": true,
     "module": "commonjs",     
     "lib":[
       "dom",
@@ -15,7 +21,6 @@
     "removeComments": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,             /* Specify what module code is generated. */
@@ -27,16 +32,10 @@
     
     // seperate ones
     "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
-
-    "strict": true,                                      /* Enable all strict type-checking options. */
-    "skipLibCheck": true    
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    
   },
-  "exclude":[
-    "node_modules"
-  ],
-  "include": [
-    "./src/**/*.tsx",
-    "./src/**/*.ts",
-
-  ]              /* Skip type checking all .d.ts files. */
+  "include": ["./src/**/*.tsx", "./src/**/*.ts"],
+  "exclude": ["node_modules"],
 }
