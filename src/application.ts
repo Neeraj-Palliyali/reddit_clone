@@ -62,7 +62,7 @@ export default class Application {
         );
   
         
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       this.host.use((error: Error, 
         req: express.Request, 
         res: express.Response, 
@@ -73,7 +73,7 @@ export default class Application {
         });
        
         
-        const port = process.env.PORT || 4000;
+        const port = process.env.PORT ?? 4000;
         this.server = this.host.listen(port, () => {
           console.log(`🚀 http://localhost:${port}/graphql`);
         });
