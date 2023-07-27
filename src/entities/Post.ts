@@ -8,15 +8,15 @@ export class Post {
     @Field(() => Int)
     @PrimaryKey()
     id!: number;
-    
+
     @Field(() => String)
     @Property({ type: "date" })
-    createdAt = new Date();
-    
+    createdAt?= new Date();
+
     @Field(() => String)
     @Property({ onUpdate: () => new Date() })
-    updatedAt = new Date();
-    
+    updatedAt?= new Date();
+
     @Field()
     @Property({ type: "text" })
     title!: string;

@@ -32,7 +32,7 @@ export class PostResolver {
         return post
     }
 
-    @Mutation(() => Post, {nullable: true})
+    @Mutation(() => Post, { nullable: true })
     async updatePost(
         @Arg("id") id: number,
         @Arg("title", () => String, { nullable: true }) title: string,
@@ -42,10 +42,10 @@ export class PostResolver {
             id
         })
 
-        if (!post){
+        if (!post) {
             return null;
         }
-        if (typeof title !== 'undefined'){
+        if (typeof title !== 'undefined') {
             post.title = title;
             await ctx.em.persistAndFlush(post);
         }
