@@ -6,7 +6,7 @@ export class UsernamePasswordInput {
     @Field()
     @MaxLength(30)
     username: string;
-    
+
     @Field()
     @MaxLength(300)
     password: string;

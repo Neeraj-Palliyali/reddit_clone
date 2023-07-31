@@ -11,7 +11,7 @@ class FieldError {
     @Field()
     @MaxLength(30)
     field: string;
-    
+
     @Field()
     @MaxLength(300)
     message: string;
@@ -27,27 +27,41 @@ class UserResponse {
 @Resolver()
 export class UserResolver {
 
-    @Mutation(() => User)
+    @Mutation(() => UserResponse)
     async register(
         @Arg('options') options: UsernamePasswordInput,
         @Ctx() ctx: MyContext
-    ): Promise<User> {
+    ): Promise<UserResponse> {
 
         const hashedPassword = await argon2.hash(options.password);
         const user = ctx.em.create(User, {
             username: options.username, password: hashedPassword,
         });
-        await ctx.em.persistAndFlush(user);
-        return user;
+        try {
+            await ctx.em.persistAndFlush(user);
+        } catch (err) {
+            if (err.code === '23505') {
+                return {
+                    errors: [
+                        {
+                            field: "username",
+                            message: "Username already exists"
+                        }
+                    ]
+                }
+            }
+            console.log("message:", err);
+        }
+        return { user, };
     }
 
     @Mutation(() => UserResponse)
     async login(
         @Arg('options') options: UsernamePasswordInput,
-        @Ctx() ctx: MyContext
+        @Ctx() {em, req}: MyContext
     ): Promise<UserResponse> {
-
-        if (options.username.length <= 2){
+        
+        if (options.username.length <= 2) {
             return {
                 errors: [{
                     field: 'username',
@@ -55,8 +69,8 @@ export class UserResolver {
                 },]
             }
         }
-
-        if (options.password.length <= 2){
+        
+        if (options.password.length <= 2) {
             return {
                 errors: [{
                     field: 'password',
@@ -64,7 +78,7 @@ export class UserResolver {
                 },]
             }
         }
-        const user = await ctx.em.findOneOrFail(User, {
+        const user = await em.findOneOrFail(User, {
             username: options.username,
         });
         
@@ -85,7 +99,8 @@ export class UserResolver {
                 },]
             }
         }
-
+        
+        req.session!.userId = user.id;
         return { user: user };
     }
 }

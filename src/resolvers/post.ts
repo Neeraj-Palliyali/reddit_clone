@@ -8,7 +8,6 @@ export class PostResolver {
     posts(
         @Ctx() ctx: MyContext
     ): Promise<Post[]> {
-        console.log("here")
         return ctx.em.find(Post, {})
     }
 

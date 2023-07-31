@@ -1,19 +1,22 @@
 import express, { Request, Response } from 'express';
-import 'express-async-errors';
-
-import { Connection, IDatabaseDriver, MikroORM } from '@mikro-orm/core';
+import ormConfig from './mikro-orm.config';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+
+import { Connection, IDatabaseDriver, MikroORM } from '@mikro-orm/core';
 import { GraphQLSchema } from 'graphql';
 import expressPlayground from 'graphql-playground-middleware-express';
 import { Server } from 'http';
-import ormConfig from './mikro-orm.config';
 import { buildSchema } from 'type-graphql';
 import { MyContext } from './types';
 import { HelloResolver } from './resolvers/hello';
 import { PostResolver } from './resolvers/post';
 import { UserResolver } from './resolvers/user';
 
+import RedisStore from "connect-redis"
+import session from "express-session"
+import { createClient } from "redis"
+import { __prod__ } from './constants';
 export default class Application {
   public orm: MikroORM<IDatabaseDriver<Connection>>;
   public host: express.Application;
@@ -31,11 +34,49 @@ export default class Application {
       console.error('📌 Could not connect to the database', error);
       throw Error(error);
     }
+
   };
 
   public init = async (): Promise<void> => {
+
+
+
     this.host = express();
 
+    try {
+
+
+
+      const client = createClient();
+
+      await client.connect();
+
+
+      // @ts-ignore: Unreachable code error
+      let redisStore = new RedisStore({
+        // @ts-ignore: Unreachable code error
+        client: client,
+        prefix: "myapp:",
+        disableTouch: true,
+      })
+
+      this.host.use(
+        session({
+          store: redisStore,
+          resave: false, // required: force lightweight session keep alive (touch)
+          saveUninitialized: false, // recommended: only save session when data exists
+          secret: "keyboard cat",
+          cookie:{
+           maxAge: 1000 * 60 * 60 * 24 * 2,  //2 days
+           httpOnly: true,
+           sameSite: 'lax',
+           secure: __prod__
+          }
+        }),
+      )
+    } catch (err) {
+      console.error(err);
+    }
     console.log(process.env.NODE_ENV)
     if (process.env.NODE_ENV !== 'production') {
       this.host.get('/graphql', expressPlayground({ endpoint: '/graphql' }));
