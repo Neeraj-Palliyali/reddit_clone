@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import ormConfig from './mikro-orm.config';
 import bodyParser from 'body-parser';
 import cors from 'cors';
@@ -14,7 +14,7 @@ import { PostResolver } from './resolvers/post';
 import { UserResolver } from './resolvers/user';
 
 import RedisStore from "connect-redis"
-import session from "express-session"
+import Session from "express-session"
 import { createClient } from "redis"
 import { __prod__ } from './constants';
 export default class Application {
@@ -61,7 +61,7 @@ export default class Application {
       })
 
       this.host.use(
-        session({
+        Session({
           store: redisStore,
           resave: false, // required: force lightweight session keep alive (touch)
           saveUninitialized: false, // recommended: only save session when data exists
@@ -94,7 +94,8 @@ export default class Application {
       this.host.post(
         '/graphql',
         bodyParser.json(),
-        graphqlHTTP((req: Request, res: Response) => ({
+        // @ts-ignore: Unreachable code error
+        graphqlHTTP((req, res) => ({
           schema,
           context: { req, res, em: this.orm.em.fork() } as MyContext,
           customFormatErrorFn: (error: Error) => {
