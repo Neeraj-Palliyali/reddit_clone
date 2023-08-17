@@ -1,10 +1,11 @@
 import { User } from "../entities/User";
-import { MyContext } from "src/types";
-import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-graphql";
-import argon2 from "argon2";
+import { Context as MyContext } from "src/types";
+import { Arg, Ctx, Field, Mutation, ObjectType, Resolver } from "type-graphql";
+import bcrypt from "bcrypt";
 import { UsernamePasswordInput } from "./usernamePasswordValidator";
 import { MaxLength } from "class-validator";
-
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from "../constants";
 @ObjectType()
 class FieldError {
 
@@ -23,21 +24,23 @@ class UserResponse {
 
     @Field(() => User, { nullable: true })
     user?: User;
+
+    @Field({ nullable: true })
+    token?: string;
 }
 @Resolver()
 export class UserResolver {
 
-    @Query(()=> User, {nullable: true})
-    async me(
-        @Ctx() { req, em }:MyContext
-    )
-    {
-        if (!req.session.userId){
-            return null;
-        }
-        const user =await em.findOne(User, { id:req.session.userId});
-        return user
-    }
+    // @Query(() => User, { nullable: true })
+    // async current_user(
+    //     @Ctx() { req, em }: MyContext
+    // ) {
+    //     // if (!req.session.userId) {
+    //     //     return null;
+    //     // }
+    //     const user = await em.findOne(User, { id: req.session.userId });
+    //     return user
+    // }
 
     @Mutation(() => UserResponse)
     async register(
@@ -45,7 +48,7 @@ export class UserResolver {
         @Ctx() ctx: MyContext
     ): Promise<UserResponse> {
 
-        const hashedPassword = await argon2.hash(options.password);
+        const hashedPassword = await bcrypt.hash(options.password, 10);
         const user = ctx.em.create(User, {
             username: options.username, password: hashedPassword,
         });
@@ -64,15 +67,32 @@ export class UserResolver {
             }
             console.log("message:", err);
         }
-        return { user, };
+
+        try {
+            const token: string = jwt.sign({ data: user.id, }, JWT_SECRET, { expiresIn: "24h" });
+            return { user, token };
+        }
+        catch (err) {
+
+            console.log("message:", err);
+            return {
+                errors: [
+                    {
+                        field: "JWT",
+                        message: "JWT cannot be generated"
+                    }
+                ]
+            }
+        };
+
     }
 
     @Mutation(() => UserResponse)
     async login(
         @Arg('options') options: UsernamePasswordInput,
-        @Ctx() {em, req}: MyContext
+        @Ctx() { em, req }: MyContext
     ): Promise<UserResponse> {
-        
+
         if (options.username.length <= 2) {
             return {
                 errors: [{
@@ -81,7 +101,7 @@ export class UserResolver {
                 },]
             }
         }
-        
+
         if (options.password.length <= 2) {
             return {
                 errors: [{
@@ -93,7 +113,7 @@ export class UserResolver {
         const user = await em.findOneOrFail(User, {
             username: options.username,
         });
-        
+
         if (!user) {
             return {
                 errors: [{
@@ -102,7 +122,8 @@ export class UserResolver {
                 },]
             }
         }
-        const valid = await argon2.verify(user.password, options.password);
+        console.log(user.password)
+        const valid = await bcrypt.compare(options.password, user.password,);
         if (!valid) {
             return {
                 errors: [{
@@ -111,8 +132,8 @@ export class UserResolver {
                 },]
             }
         }
-        
-        req.session.userId = user.id;
+
+        // req.session.userId = user.id;
         return { user: user };
     }
 }
